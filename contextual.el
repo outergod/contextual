@@ -134,5 +134,17 @@
 ;;;###autoload
 (define-globalized-minor-mode contextual-global-mode contextual-mode contextual-mode)
 
+;; This beast exists for the simple purpose of coloring and indenting
+;; some functions.
+(dolist (v '(ctx-add-profile ctx-define-profile-group ctx-define-profile-loader))
+  (put v 'lisp-indent-function 'defun)
+  (dolist (mode '(emacs-lisp-mode lisp-interaction-mode))
+    (font-lock-add-keywords mode `((,(concat
+                                      "(\\<\\(" (symbol-name v) "\\)\\_>"
+                                      "[ \t'\(]*"
+                                      "\\(\\(?:\\sw\\|\\s_\\)+\\)?")
+                                    (1 font-lock-keyword-face)
+                                    (2 font-lock-variable-name-face nil t))))))
+
 (provide 'contextual)
 ;;; contextual.el ends here
