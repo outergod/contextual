@@ -73,35 +73,52 @@
 (defvar ctx-active-profile nil
   "Currently active Contextual profile")
 
+;; (cl-defmacro ctx-define-profile-group (name &optional initial)
+;;   (let ((prefix (concat (symbol-name name) "-")))
+;;     `(defvar ,(intern (concat prefix "profiles")))
+;;     `(defvar ,(intern (concat prefix "active-profile")))
+;;     `(defvar ,(intern (concat prefix "initial-profile")) ,initial)
+;;     `(defvar ,name '(,profiles ,active ,initial))))
+
+(ctx-define-profile-group ctx-default-profile-group
+  (ctx-profiles ctx-active-profile ctx-initial-profile))
+
 (defun ctx-mode-line ()
   (format " ctx[%s]" (or ctx-active-profile "(none)")))
 
-(defun ctx-activate-profile (name)
-  (unless (string= ctx-active-profile name)
-    (-let* (((&alist name (&alist 'vars (vars) 'hook (hook))) ctx-profiles))
-      (mapc #'(lambda (pair)
-                (set (car pair) (cadr pair)))
-            vars)
-      (funcall hook)
-      (setq ctx-active-profile name)
-      (message "Loaded profile %s" name))))
+(defun ctx-activate-profile (group name)
+  (-let [(profiles active) group]
+    (unless (string= (symbol-value active) name)
+      (-let* (((&alist name (&alist 'vars (vars) 'hook (hook))) (symbol-value profiles)))
+        (mapc #'(lambda (pair)
+                  (set (car pair) (cadr pair)))
+              vars)
+        (funcall hook)
+        (setf (symbol-value active) name)
+        (message "Loaded profile %s" name)))))
 
-(defun ctx-load-profile ()
-  (interactive)
-  (ctx-activate-profile (completing-read "Profile: " ctx-profiles nil t)))
+(defun ctx-profile-loader (group)
+  #'(lambda ()
+      (interactive)
+      (ctx-activate-profile group (completing-read "Profile: " (symbol-value (car group)) nil t))))
 
-(defun ctx--add-profile (name profile)
-  (add-to-list 'ctx-profiles (cons name profile)))
+(cl-defmacro ctx-define-profile-loader (name group)
+  `(defalias ',name (ctx-profile-loader ,group)))
 
-(cl-defmacro ctx-add-profile (name (&rest vars) &rest body)
-  `(ctx--add-profile ,name
+(ctx-define-profile-loader ctx-load-profile ctx-default-profile-group)
+
+(defun ctx--add-profile (profiles name profile)
+  (add-to-list profiles (cons name profile)))
+
+(cl-defmacro ctx-add-profile (name (&optional (profiles 'ctx-profiles)) (&rest vars) &rest body)
+  `(ctx--add-profile ',profiles ,name
      '((vars ,(-partition 2 vars))
        (hook (lambda () ,@body)))))
 
 (defun ctx-set-initial-profile (name)
-  (setq ctx-initial-profile-name name)
+  (setq ctx-initial-profile name)
   (unless ctx-active-profile
-    (ctx-activate-profile name)))
+    (ctx-activate-profile ctx-default-profile-group name)))
 
 (defvar ctx-command-map
   (let ((map (make-sparse-keymap)))
@@ -128,7 +145,7 @@
       (progn (run-hooks 'contextual-enabled-hook)
              (when (and (not ctx-active-profile)
                         ctx-initial-profile)
-               (ctx-activate-profile ctx-initial-profile)))
+               (ctx-activate-profile ctx-default-profile-group ctx-initial-profile)))
     (run-hooks 'contextual-disabled-hook)))
 
 ;;;###autoload
