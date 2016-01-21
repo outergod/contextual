@@ -51,7 +51,7 @@ Basic setup consists of the following steps:
 Switching between profiles in the default profile group is bound to
 =ctx-load-profile=, or =c= in the Contextual prefix map. The default prefix for
 Contextual is =C-c c=, so the default key combination is
-<kbd>C-c c c</kbd>. Contextual provides completion candidates and is therefore
+=C-c c c=. Contextual provides completion candidates and is therefore
 compatible with completion framework such as HELM.
 
 Contextual minor mode is indicated in the mode line by =ctx= followed by the
@@ -93,7 +93,7 @@ is the name of the new symbol to bind the loader to, =font-profiles= was defined
 earlier and =(kbd "f")= specifies the key to bind to.
 
 After running this code, the =normal= font profile would automatically be
-preloaded and <kbd>M-x font-profile-loader RET</kbd> or <kbd>C-c c f</kbd> can
+preloaded and =M-x font-profile-loader RET= or =C-c c f= can
 be used to switch between font profiles.
 
 ** API
