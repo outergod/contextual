@@ -4,7 +4,7 @@
 
 ;; Author: Alexander Kahl <alex@lshift.de>
 ;; Version: 0.1.0
-;; Package-Requires: ((dash "2.12.1"))
+;; Package-Requires: ((emacs "24") (dash "2.12.1") (cl-lib "0.5"))
 ;; Keywords: convenience, tools
 ;; URL: https://github.com/lshift-de/contextual
 
@@ -29,7 +29,7 @@
 
 ;;; Code:
 
-(require 'cl-macs)
+(require 'cl-lib)
 (require 'dash)
 
 ;;; Types and customization
