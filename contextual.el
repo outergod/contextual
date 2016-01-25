@@ -24,7 +24,7 @@
 ;;; Commentary:
 
 ;; Contextual provides profiles support for Emacs. Switching between
-;; profiles sets global variables and runs hooks to reflect switching
+;; contexts sets global variables and runs hooks to reflect switching
 ;; the user's identity or the working environment.
 
 ;;; Code:
@@ -68,68 +68,67 @@
   :options '(vars hook)
   :type '(alist :key-type string :value-type ctx-profile-type))
 
-(define-widget 'ctx-profile-group-type 'lazy
-  "Contextual profile group type"
+(define-widget 'ctx-context-type 'lazy
+  "Contextual context type"
   :offset 4
-  :tag "Profile Group"
+  :tag "Context"
   :type '(group (ctx-profiles-type :tag "Profiles")
                 (string :tag "Active profile name")
                 (string :tag "Initial profile name")))
 
-(defcustom ctx-default-profiles '(nil nil nil)
-  "Contextual default profiles group"
+(defcustom ctx-default-context '(nil nil nil)
+  "Contextual default context"
   :group 'contextual
-  :type 'ctx-profile-group-type)
+  :type 'ctx-context-type)
 
 ;;; Implementation
 
-(cl-defmacro ctx-define-profiles (name &optional initial)
-  "Define new profile group `name'
+(cl-defmacro ctx-define-context (name &optional initial)
+  "Define new context `name'
 
 Optionally, set `initial' value."
   `(defvar ,name '(nil nil ,initial)))
 
-(defun ctx-reset-profiles (profiles)
-  "Reset profile group values"
-  (setf (nth 0 profiles) nil)
-  (setf (nth 1 profiles) nil))
+(defun ctx-reset-context (context)
+  "Reset context values"
+  (setf (nth 0 context) nil)
+  (setf (nth 1 context) nil))
 
 (defun ctx-mode-line ()
   "Contextual mode line formatter"
-  (format " ctx[%s]" (or (nth 1 ctx-default-profiles) "(none)")))
+  (format " ctx[%s]" (or (nth 1 ctx-default-context) "(none)")))
 
-(defun ctx-activate-profile (group name)
-  "Activate profile `name' in `group'"
-  (-let [(profiles active) group]
+(defun ctx-activate-profile (context name)
+  "Activate profile `name' in `context'"
+  (-let [(profiles active) context]
     (unless (string= active name)
       (-let* (((&alist name (&alist 'vars (vars) 'hook (hook))) profiles))
         (mapc #'(lambda (pair)
                   (set (car pair) (cadr pair)))
               vars)
         (funcall hook)
-        (setf (nth 1 group) name)
+        (setf (nth 1 context) name)
         (message "Loaded profile %s" name)))))
 
-(defun ctx-profile-loader (group)
-  "Create interactive profile loader for `group'
+(defun ctx-context-loader (context)
+  "Create interactive profile loader for `context'.
 
-Use this with `ctx-define-profile-loader' to create custom profile
-group loaders."
+Use this with `ctx-define-context-loader' to create custom context loaders."
   #'(lambda ()
       (interactive)
-      (ctx-activate-profile group (completing-read "Profile: " (car group) nil t))))
+      (ctx-activate-profile context (completing-read "Profile: " (car context) nil t))))
 
-(defun ctx--add-profile (profiles name profile)
-  "Add new `profile' with `name' to `profiles'"
-  (setf (nth 0 profiles)
+(defun ctx--add-profile (context name profile)
+  "Add new `profile' with `name' to `context'"
+  (setf (nth 0 context)
         (cons (cons name profile)
-              (nth 0 profiles))))
+              (nth 0 context))))
 
-(cl-defmacro ctx-add-profile (name (&optional (profiles 'ctx-default-profiles)) (&rest vars) &rest body)
-  "Add a new Contextual profile to an existing profile group
+(cl-defmacro ctx-add-profile (name (&optional (context 'ctx-default-context)) (&rest vars) &rest body)
+  "Add a new Contextual profile to an existing context
 
-Use this function to define new Contextual profiles.
-If `profiles' is not set, it will add to the main profile group that
+Use this function to define a new context.
+If `context' is not set, it will add to the main context that
 is activated with Contextual's minor mode.
 
 `vars' must be an even number of key/value pairs where each key is the
@@ -137,7 +136,7 @@ name of a symbol to be set to the corresponding value when this
 profile gets activated.
 
 The body is run unconditionally each time the profile is activated."
-  `(ctx--add-profile ,profiles ,name
+  `(ctx--add-profile ,context ,name
      '((vars ,vars)
        (hook (lambda () ,@body)))))
 
@@ -147,9 +146,9 @@ The body is run unconditionally each time the profile is activated."
 Only has an effect if run before Contextual's minor mode is
 activated. If set during activation, the specified profile will be set
 right away."
-  (setf (nth 2 ctx-default-profiles) name)
-  (unless (nth 1 ctx-default-profiles)
-    (ctx-activate-profile ctx-default-profiles name)))
+  (setf (nth 2 ctx-default-context) name)
+  (unless (nth 1 ctx-default-context)
+    (ctx-activate-profile ctx-default-context name)))
 
 (defvar ctx-command-map
   (let ((map (make-sparse-keymap)))
@@ -164,20 +163,20 @@ right away."
     map)
   "Keymap for Contextual mode.")
 
-(cl-defmacro ctx-define-profile-loader (name group &optional key)
+(cl-defmacro ctx-define-context-loader (name context &optional key)
   "Define Contextual profile loader `name'
 
-Pass a profile group created with `ctx-define-profiles' for `group'.
+Pass a context created with `ctx-define-context' for `context'.
 A `key' may be passed to be added to Contextual's keymap for quick
 profile switching."
   `(progn
-     (defalias ',name (ctx-profile-loader ,group))
+     (defalias ',name (ctx-context-loader ,context))
      ,(when key
         `(define-key ctx-command-map ,key ',name))))
 
-;; Define the default profile group loader
-(ctx-define-profile-loader ctx-load-profile
-  ctx-default-profiles (kbd "c"))
+;; Define the default context loader
+(ctx-define-context-loader ctx-load-profile
+  ctx-default-context (kbd "c"))
 
 ;;;###autoload
 (define-minor-mode contextual-mode
@@ -188,10 +187,10 @@ profile switching."
   :group 'contextual
   :keymap ctx-keymap
   (if contextual-mode
-      (-let [(_ active initial) ctx-default-profiles]
+      (-let [(_ active initial) ctx-default-context]
         (run-hooks 'contextual-enabled-hook)
         (when (and (not active) initial)
-          (ctx-activate-profile ctx-default-profiles initial)))
+          (ctx-activate-profile ctx-default-context initial)))
     (run-hooks 'contextual-disabled-hook)))
 
 ;;;###autoload
@@ -199,7 +198,7 @@ profile switching."
 
 ;; This beast exists for the simple purpose of coloring and indenting
 ;; some functions.
-(dolist (v '(ctx-add-profile ctx-define-profiles ctx-define-profile-loader))
+(dolist (v '(ctx-add-profile ctx-define-context ctx-define-context-loader))
   (put v 'lisp-indent-function 'defun)
   (dolist (mode '(emacs-lisp-mode lisp-interaction-mode))
     (font-lock-add-keywords mode `((,(concat

@@ -19,10 +19,10 @@ repository.
 
 * Usage
 
-Contextual can be used in two ways: Through its default profile group and
-through custom profile groups, which can be used independently from each
-other. A profile group consists of a list of profiles to switch between, as well
-as meta data.
+Contextual can be used in two ways: Through its default context and
+through custom contexts, which can be used independently from each
+other. A context consists of a list of profiles to switch between, as
+well as meta data.
 
 ** Basic setup
 
@@ -48,7 +48,7 @@ Basic setup consists of the following steps:
   (contextual-global-mode) ; activates the initial profile right away
 #+END_SRC
 
-Switching between profiles in the default profile group is bound to
+Switching between profiles in the default context is bound to
 =ctx-load-profile=, or =c= in the Contextual prefix map. The default prefix for
 Contextual is =C-c c=, so the default key combination is
 =C-c c c=. Contextual provides completion candidates and is therefore
@@ -63,10 +63,10 @@ The keymap prefix =C-c c= can be changed by setting =ctx-keymap-prefix=:
   (setq ctx-keymap-prefix (kbd "..."))
 #+END_SRC
 
-** Custom profile groups
+** Custom contexts
 
-Defining custom profile groups is useful to define variables to be used
-independently from the default profile group. The following example defines
+Defining custom contexts is useful to define variables to be used
+independently from the default context. The following example defines
 profiles for different font sizes, which needs custom code to be run.
 
 #+BEGIN_SRC emacs-lisp
@@ -82,15 +82,16 @@ profiles for different font sizes, which needs custom code to be run.
 #+END_SRC
 
 The first form binds a new variable =font-profiles= with an initial profile
-of =normal=. =ctx-add-profile= takes the profile group as an optional parameter
+of =normal=. =ctx-add-profile= takes the context as an optional parameter
 in the first pair of parens. Without the parameter, the profiles would instead
-be added to the default profile group. =set-frame-font= is run every time the
+be added to the default context. =set-frame-font= is run every time the
 respective profile is being activated.
 
-=ctx-define-profile-loader= binds a new interactive function for a profile
-group and assigns it a key in Contextual's keymap. Here, =font-profile-loader=
-is the name of the new symbol to bind the loader to, =font-profiles= was defined
-earlier and =(kbd "f")= specifies the key to bind to.
+=ctx-define-profile-loader= binds a new interactive function for a
+context and assigns it a key in Contextual's keymap. Here,
+=font-profile-loader= is the name of the new symbol to bind the loader
+to, =font-profiles= was defined earlier and =(kbd "f")= specifies the
+key to bind to.
 
 After running this code, the =normal= font profile would automatically be
 preloaded and =M-x font-profile-loader RET= or =C-c c f= can
@@ -102,14 +103,14 @@ of the package doesn't change is comprised of the following functions:
 
 - =ctx-add-profile NAME (&optional (PROFILES 'ctx-default-profiles)) (&rest VARS) &rest BODY=
 - =ctx-set-initial-profile NAME=
-- =ctx-define-profiles NAME &optional INITIAL=
-- =ctx-define-profile-loader NAME GROUP &optional KEY=
+- =ctx-define-context NAME &optional INITIAL=
+- =ctx-define-context-loader NAME context &optional KEY=
 - =contextual-global-mode=
 
 Additional functions that may be of use but which are not guaranteed to be
 stable are:
 
-- =ctx-reset-profiles PROFILES=
+- =ctx-reset-context PROFILES=
 - =ctx-activate-profile GROUP NAME=
 
 ** Copyright
