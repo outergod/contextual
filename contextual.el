@@ -77,7 +77,7 @@
                 (string :tag "Initial profile name")))
 
 (defcustom ctx-default-context '(nil nil nil)
-  "Contextual default context"
+  "Contextual default context."
   :group 'contextual
   :type 'ctx-context-type)
 
@@ -90,16 +90,16 @@ Optionally, set `initial' value."
   `(defvar ,name '(nil nil ,initial)))
 
 (defun ctx-reset-context (context)
-  "Reset context values"
+  "Reset CONTEXT's values."
   (setf (nth 0 context) nil)
   (setf (nth 1 context) nil))
 
 (defun ctx-mode-line ()
-  "Contextual mode line formatter"
+  "Contextual mode line formatter."
   (format " ctx[%s]" (or (nth 1 ctx-default-context) "(none)")))
 
 (defun ctx-activate-profile (context name)
-  "Activate profile `name' in `context'"
+  "Activate profile NAME in CONTEXT."
   (-let [(profiles active) context]
     (unless (string= active name)
       (-let* (((&alist name (&alist 'vars (vars) 'hook (hook))) profiles))
@@ -111,7 +111,7 @@ Optionally, set `initial' value."
         (message "Loaded profile %s" name)))))
 
 (defun ctx-context-loader (context)
-  "Create interactive profile loader for `context'.
+  "Create interactive profile loader for CONTEXT.
 
 Use this with `ctx-define-context-loader' to create custom context loaders."
   #'(lambda ()
@@ -119,13 +119,13 @@ Use this with `ctx-define-context-loader' to create custom context loaders."
       (ctx-activate-profile context (completing-read "Profile: " (car context) nil t))))
 
 (defun ctx--add-profile (context name profile)
-  "Add new `profile' with `name' to `context'"
+  "Add new PROFILE with NAME to CONTEXT."
   (setf (nth 0 context)
         (cons (cons name profile)
               (nth 0 context))))
 
 (cl-defmacro ctx-add-profile (name (&optional (context 'ctx-default-context)) (&rest vars) &rest body)
-  "Add a new Contextual profile to an existing context
+  "Add a new Contextual profile to an existing context.
 
 Use this function to define a new context.
 If `context' is not set, it will add to the main context that
@@ -141,10 +141,10 @@ The body is run unconditionally each time the profile is activated."
        (hook (lambda () ,@body)))))
 
 (defun ctx-set-initial-profile (name)
-  "Set Contextual's initial profile
+  "Set Contextual's initial profile to NAME.
 
 Only has an effect if run before Contextual's minor mode is
-activated. If set during activation, the specified profile will be set
+activated.  If set during activation, the specified profile will be set
 right away."
   (setf (nth 2 ctx-default-context) name)
   (unless (nth 1 ctx-default-context)
