@@ -54,61 +54,41 @@
   :group 'contextual
   :type 'hook)
 
-(define-widget 'ctx-profile-type 'lazy
-  "Contextual profile type"
-  :offset 4
-  :tag "Profile"
-  :options '(vars hook)
-  :type '(alist))
-
-(define-widget 'ctx-profiles-type 'lazy
-  "Contextual profiles type"
-  :offset 4
-  :tag "Profiles"
-  :options '(vars hook)
-  :type '(alist :key-type string :value-type ctx-profile-type))
-
-(define-widget 'ctx-context-type 'lazy
-  "Contextual context type"
-  :offset 4
-  :tag "Context"
-  :type '(group (ctx-profiles-type :tag "Profiles")
-                (string :tag "Active profile name")
-                (string :tag "Initial profile name")))
-
-(defcustom ctx-default-context '(nil nil nil)
-  "Contextual default context."
-  :group 'contextual
-  :type 'ctx-context-type)
-
 ;;; Implementation
 
-(cl-defmacro ctx-define-context (name &optional initial)
-  "Define new context `name'
+(defun ctx--define-context (context initial)
+  "Initialize CONTEXT.
 
-Optionally, set `initial' value."
-  `(defvar ,name '(nil nil ,initial)))
+Set INITIAL profile."
+  (put context 'initial-profile initial)
+  (put context 'active-profile nil)
+  (put context 'profiles nil))
 
-(defun ctx-reset-context (context)
-  "Reset CONTEXT's values."
-  (setf (nth 0 context) nil)
-  (setf (nth 1 context) nil))
+(cl-defmacro defcontext (context &optional initial)
+  "Declare CONTEXT to be a context.
+
+Optionally, set the INITIAL profile."
+  `(ctx--define-context ',context ,initial))
+
+(defcontext ctx-default-context)
 
 (defun ctx-mode-line ()
   "Contextual mode line formatter."
-  (format " ctx[%s]" (or (nth 1 ctx-default-context) "(none)")))
+  (format " ctx[%s]" (or (get 'ctx-default-context 'active-profile) "(none)")))
 
-(defun ctx-activate-profile (context name)
-  "Activate profile NAME in CONTEXT."
-  (-let [(profiles active) context]
-    (unless (string= active name)
-      (-let* (((&alist name (&alist 'vars (vars) 'hook (hook))) profiles))
-        (mapc #'(lambda (pair)
-                  (set (car pair) (cadr pair)))
-              vars)
+(defun ctx-activate-profile (context profile)
+  "Activate PROFILE in CONTEXT."
+  (let ((active (get context 'active-profile))
+        (initial (get context 'initial-profile))
+        (profiles (get context 'profiles)))
+    (unless (string= active profile)
+      (-let (((&alist active (old-theme)
+                      profile (theme hook)) profiles))
+        ; (disable-theme old-theme) horrible idea; makes whole screen flash
+        (enable-theme theme)
         (funcall hook)
-        (setf (nth 1 context) name)
-        (message "Loaded profile %s" name)))))
+        (put context 'active-profile profile)
+        (message "Loaded profile %s" profile)))))
 
 (defun ctx-context-loader (context)
   "Create interactive profile loader for CONTEXT.
@@ -116,39 +96,45 @@ Optionally, set `initial' value."
 Use this with `ctx-define-context-loader' to create custom context loaders."
   #'(lambda ()
       (interactive)
-      (ctx-activate-profile context (completing-read "Profile: " (car context) nil t))))
+      (ctx-activate-profile context (completing-read "Profile: " (get context 'profiles) nil t))))
 
 (defun ctx--add-profile (context name profile)
   "Add new PROFILE with NAME to CONTEXT."
-  (setf (nth 0 context)
-        (cons (cons name profile)
-              (nth 0 context))))
+  (setf (get context 'profiles)
+        (cons (cons name profile) (get context 'profiles))))
 
-(cl-defmacro ctx-add-profile (name (&optional (context 'ctx-default-context)) (&rest vars) &rest body)
-  "Add a new Contextual profile to an existing context.
+(cl-defmacro ctx-add-profile (profile (&optional (context 'ctx-default-context)) (&rest vars) &rest body)
+  "Add a new Contextual PROFILE to an existing context.
 
 Use this function to define a new context.
-If `context' is not set, it will add to the main context that
-is activated with Contextual's minor mode.
+If CONTEXT is not set, it will add to the main context that is
+activated with Contextual's minor mode.
 
-`vars' must be an even number of key/value pairs where each key is the
-name of a symbol to be set to the corresponding value when this
-profile gets activated.
+PROFILE will also be registered as a custom theme with VARS passed to
+`custom-theme-set-variables'. Therefore, every argument in VARS should be a list of the form
+ 
+  (SYMBOL EXP [NOW [REQUEST [COMMENT]])]
 
-The body is run unconditionally each time the profile is activated."
-  `(ctx--add-profile ,context ,name
-     '((vars ,vars)
-       (hook (lambda () ,@body)))))
+as documented in `custom-theme-set-variables'.
 
-(defun ctx-set-initial-profile (name)
-  "Set Contextual's initial profile to NAME.
+BODY is run unconditionally each time the profile is activated."
+  (let ((theme (intern (concat (symbol-name context) "-" profile))))
+    `(progn
+       (deftheme ,theme)
+       (apply #'custom-theme-set-variables ',theme ',vars)
+       (ctx--add-profile ',context ,profile
+         '(,theme
+           (lambda () ,@body))))))
 
-Only has an effect if run before Contextual's minor mode is
-activated.  If set during activation, the specified profile will be set
-right away."
-  (setf (nth 2 ctx-default-context) name)
-  (unless (nth 1 ctx-default-context)
-    (ctx-activate-profile ctx-default-context name)))
+(defun ctx-set-initial-profile (profile)
+  "Set Contextual's initial PROFILE.
+
+If set while `contextual-mode' is active, the specified profile will
+be activated right away."
+  (put 'ctx-default-context 'initial-profile profile)
+  (when (and contextual-mode
+             (not (get 'ctx-default-context 'active-profile)))
+    (ctx-activate-profile 'ctx-default-context profile)))
 
 (defvar ctx-command-map
   (let ((map (make-sparse-keymap)))
@@ -170,7 +156,7 @@ Pass a context created with `ctx-define-context' for `context'.
 A `key' may be passed to be added to Contextual's keymap for quick
 profile switching."
   `(progn
-     (defalias ',name (ctx-context-loader ,context))
+     (defalias ',name (ctx-context-loader ',context))
      ,(when key
         `(define-key ctx-command-map ,key ',name))))
 
@@ -187,10 +173,11 @@ profile switching."
   :group 'contextual
   :keymap ctx-keymap
   (if contextual-mode
-      (-let [(_ active initial) ctx-default-context]
+      (let ((initial (get 'ctx-default-context 'initial-profile))
+            (active (get 'ctx-default-context 'active-profile)))
         (run-hooks 'contextual-enabled-hook)
         (when (and (not active) initial)
-          (ctx-activate-profile ctx-default-context initial)))
+          (ctx-activate-profile 'ctx-default-context initial)))
     (run-hooks 'contextual-disabled-hook)))
 
 ;;;###autoload
@@ -198,7 +185,7 @@ profile switching."
 
 ;; This beast exists for the simple purpose of coloring and indenting
 ;; some functions.
-(dolist (v '(ctx-add-profile ctx-define-context ctx-define-context-loader))
+(dolist (v '(defcontext ctx-add-profile ctx-define-context-loader))
   (put v 'lisp-indent-function 'defun)
   (dolist (mode '(emacs-lisp-mode lisp-interaction-mode))
     (font-lock-add-keywords mode `((,(concat
