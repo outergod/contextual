@@ -39,7 +39,7 @@
   :group 'convenience
   :prefix "contextual-")
 
-(defcustom contextual-keymap-prefix (kbd "C-c c")
+(defcustom contextual-keymap-prefix (kbd "s-c")
   "Contextual keymap prefix."
   :group 'contextual
   :type 'string)
