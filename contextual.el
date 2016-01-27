@@ -96,7 +96,9 @@ Optionally, set the INITIAL profile."
 Use this with `contextual-define-context-loader' to create custom context loaders."
   #'(lambda ()
       (interactive)
-      (contextual-activate-profile context (completing-read "Profile: " (get context 'profiles) nil t))))
+      (let ((profiles (get context 'profiles))
+            (active (get context 'active-profile)))
+        (contextual-activate-profile context (completing-read "Profile: " (delq (assoc active profiles) profiles) nil t)))))
 
 (defun contextual--add-profile (context name profile)
   "Add new PROFILE with NAME to CONTEXT."
