@@ -52,7 +52,7 @@ The format for the variable forms is that of `custom-theme-set-variables`.
 
 Switching between profiles in the default context is bound to
 `contextual-load-profile`, or `c` in the Contextual prefix map. The default prefix for
-Contextual is <kbd>s-c</kbd> [^super], so the default key combination is
+Contextual is <kbd>s-c</kbd><sup>super</sup>, so the default key combination is
 <kbd>s-c c</kbd>. Contextual provides completion candidates and is
 therefore compatible with completion framework such as HELM.
 
@@ -67,7 +67,7 @@ The keymap prefix <kbd>s-c</kbd> can be changed by setting
 (setq contextual-keymap-prefix (kbd "..."))
 ```
 
-[^super]: The _Super key "s"_ is mapped to the Windows key on Windows
+<sup>super</sup>The _Super key "s"_ is mapped to the Windows key on Windows
 keyboards and the Hyper key on Mac keyboards.
 
 ## Custom contexts
