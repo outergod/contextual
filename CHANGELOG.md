@@ -10,3 +10,6 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Changed default key prefix to `s-c`
 - Coherent function naming with `contextual` prefix
 - Release to MELPA
+
+## [1.0.1] - 2016-01-31
+- Fix for disappearing profiles

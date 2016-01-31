@@ -98,7 +98,7 @@ Use this with `contextual-define-context-loader' to create custom context loader
       (interactive)
       (let ((profiles (get context 'profiles))
             (active (get context 'active-profile)))
-        (contextual-activate-profile context (completing-read "Profile: " (delq (assoc active profiles) profiles) nil t)))))
+        (contextual-activate-profile context (completing-read "Profile: " (cl-remove active profiles :key #'car :test #'equal) nil t)))))
 
 (defun contextual--add-profile (context name profile)
   "Add new PROFILE with NAME to CONTEXT."
