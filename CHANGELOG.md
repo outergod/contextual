@@ -13,3 +13,6 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.0.1] - 2016-01-31
 - Fix for disappearing profiles
+
+## [1.0.2] - 
+- Removed reference to foreign project in README
