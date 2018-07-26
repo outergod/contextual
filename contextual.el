@@ -1,8 +1,8 @@
 ;;; contextual.el --- Contextual profile management system	-*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016 LShift Services GmbH
+;; Copyright (C) 2016 LShift Services GmbH, 2018 Alexander Kahl
 
-;; Author: Alexander Kahl <alex@lshift.de>
+;; Author: Alexander Kahl <ak@sodosopa.io>
 ;; Version: 1.0.0
 ;; Package-Requires: ((emacs "24") (dash "2.12.1") (cl-lib "0.5"))
 ;; Keywords: convenience, tools
@@ -23,9 +23,9 @@
 
 ;;; Commentary:
 
-;; Contextual provides profiles support for Emacs. Switching between
-;; contexts sets global variables and runs hooks to reflect switching
-;; the user's identity or the working environment.
+;; Contextual provides profiles support for Emacs.  Switching between contexts
+;; sets global variables and runs hooks to reflect switching the user's identity
+;; or the working environment.
 
 ;;; Code:
 
@@ -161,6 +161,35 @@ profile switching."
      (defalias ',name (contextual-context-loader ',context))
      ,(when key
         `(define-key contextual-command-map ,key ',name))))
+
+;; Profile cycling
+(defun contextual-cycle-profile (context x)
+  "Cycle through `X' profiles in `CONTEXT', wrapping over if necessary."
+  (let* ((profiles (mapcar #'car (get context 'profiles)))
+         (n (length profiles)))
+    (nth (mod (+ x (position (get 'contextual-default-context 'active-profile) profiles :test #'equal) n) n)
+         profiles)))
+
+(defun contextual-next-profile (context)
+  "The next profile defined for `CONTEXT', wrapping over if necessary."
+  (contextual-cycle-profile context 1))
+
+(defun contextual-previous-profile (context)
+  "The previous profile defined for `CONTEXT', wrapping over if necessary."
+  (contextual-cycle-profile context -1))
+
+(defun contextual-activate-next-profile (context)
+  "Activate the next profile defined for `CONTEXT'."
+  (interactive (list (if (boundp 'context) context 'contextual-default-context)))
+  (contextual-activate-profile context (contextual-next-profile context)))
+
+(defun contextual-activate-previous-profile (context)
+  "Activate the previous profile defined for `CONTEXT'."
+  (interactive (list (if (boundp 'context) context 'contextual-default-context)))
+  (contextual-activate-profile context (contextual-previous-profile context)))
+
+(global-set-key (kbd "<M-s-right>") #'contextual-activate-next-profile)
+(global-set-key (kbd "<M-s-left>") #'contextual-activate-previous-profile)
 
 ;; Define the default context loader
 (contextual-define-context-loader contextual-load-profile
