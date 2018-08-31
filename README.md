@@ -119,6 +119,7 @@ stable are:
 
 ## Copyright
 Copyright © 2016 LShift Services GmbH
+Copyright © 2018 Alexander Kahl
 
 Contextual is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
